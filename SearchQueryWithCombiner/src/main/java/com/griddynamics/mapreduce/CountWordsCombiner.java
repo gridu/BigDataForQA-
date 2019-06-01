@@ -1,11 +1,11 @@
 package com.griddynamics.mapreduce;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.HashMultiset;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -14,13 +14,11 @@ public class CountWordsCombiner extends
 
     protected void reduce(Text key, Iterable<Text> values, Context context) throws java.io.IOException, InterruptedException {
 
-        List<String> terms = StreamSupport.stream(values.spliterator(), false).map(item ->
-                item.toString()).collect(Collectors.toList());
-        HashSet<String> stringsSet = new HashSet<>(terms);
-        for (String word : stringsSet) {
-            String format = String.format("%s\t%d", word, Collections.frequency(terms, word));
-            context.write(key, new Text(format));
-        }
-
+        HashMultiset<String> words =  HashMultiset.create();
+        StreamSupport.stream(values.spliterator(), false).forEach(t -> words.add(t.toString()));
+        Map<String, Integer> result = words.entrySet().stream().collect(Collectors.toMap(x -> x.getElement(), x -> x.getCount()));
+        ObjectMapper mapper = new ObjectMapper();
+        String jsonResult = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(result);
+        context.write(key, new Text(jsonResult));
     }
 }

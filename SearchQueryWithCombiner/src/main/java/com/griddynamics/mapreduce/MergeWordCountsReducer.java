@@ -1,35 +1,31 @@
 package com.griddynamics.mapreduce;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.HashMultiset;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
 
 public class MergeWordCountsReducer extends
         Reducer<Text, Text, Text, Text> {
 
-    protected void reduce(Text key, Iterable<Text> values, Context context) throws java.io.IOException, InterruptedException {
-        HashMap<String, Integer> counts = new HashMap<>();
+    protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+        HashMultiset<String> words =  HashMultiset.create();
+        int limit = context.getConfiguration().getInt("search.words.count.limit.output", 3);
         for (Text val : values) {
-            String word = val.toString().split("\t")[0];
-            int frequency = Integer.valueOf(val.toString().split("\t")[1]);
-            int newValue = counts.getOrDefault(word, 0) + frequency;
-            counts.put(word, newValue);
-
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Integer> map = mapper.readValue(val.toString(), Map.class);
+            map.entrySet().forEach(t -> words.add(t.getKey(), t.getValue()));
         }
-        LinkedHashMap<String, Integer> sorted = counts
-                .entrySet()
-                .stream()
-                .sorted(java.util.Collections.reverseOrder(Map.Entry.comparingByValue()))
-                .collect(toMap(e -> e.getKey(), e -> e.getValue(), (e1, e2) -> e2, LinkedHashMap::new));
-        List<String> collect = sorted.entrySet().stream().limit(3).map(item -> item.getKey()).collect(toList());
-
-        context.write(key, new Text(collect.toString()));
+        PriorityQueue<SearchWordCount> priorityQueue = new PriorityQueue();
+        words.entrySet().forEach(t -> priorityQueue.add(new SearchWordCount(t.getElement(), words.count(t.getElement()))));
+        List<String> popularWords = priorityQueue.stream().limit(limit).map(t -> t.getWord()).collect(toList());
+        context.write(key, new Text(popularWords.toString()));
     }
 }
