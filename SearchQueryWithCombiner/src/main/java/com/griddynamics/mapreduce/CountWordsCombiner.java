@@ -14,7 +14,7 @@ public class CountWordsCombiner extends
 
     protected void reduce(Text key, Iterable<Text> values, Context context) throws java.io.IOException, InterruptedException {
 
-        HashMultiset<String> words =  HashMultiset.create();
+        HashMultiset<String> words = HashMultiset.create();
         StreamSupport.stream(values.spliterator(), false).forEach(t -> words.add(t.toString()));
         Map<String, Integer> result = words.entrySet().stream().collect(Collectors.toMap(x -> x.getElement(), x -> x.getCount()));
         ObjectMapper mapper = new ObjectMapper();

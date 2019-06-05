@@ -16,7 +16,7 @@ public class IDToWordMapper extends Mapper<LongWritable, Text, Text, Text> {
             try {
                 context.write(new Text(elements[1]), new Text(w));
             } catch (IOException | InterruptedException e) {
-               throw  new RuntimeException(e);
+                throw new RuntimeException(e);
             }
         });
     }

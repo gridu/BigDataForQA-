@@ -1,6 +1,6 @@
 package com.griddynamics.mapreduce;
 
-public class SearchWordCount implements Comparable {
+public class SearchWordCount {
     private final String word;
     private final long count;
 
@@ -9,12 +9,11 @@ public class SearchWordCount implements Comparable {
         this.count = count;
     }
 
-    @Override
-    public int compareTo(Object o) {
-        return Long.compare(((SearchWordCount) o).count, this.count); // reverse order
-    }
-
     public String getWord() {
         return word;
+    }
+
+    public long getCount() {
+        return count;
     }
 }
